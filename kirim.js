@@ -1,7 +1,7 @@
 /* Report HK — penyimpanan offline (IndexedDB) + pengiriman antrean ke server.
  * Dipakai bersama oleh halaman (app.js) dan service worker (sw.js, untuk kirim di latar belakang di Android). */
 var API_URL = 'https://script.google.com/macros/s/AKfycbz5OReGyoLNvlMosAgsqE1cYRxPcIsk2OIyRJmqj3KUuSw4UpCvSvin93HS8sF_dxQK/exec';
-var APP_VERSI = '2026-11-06a';
+var APP_VERSI = '2026-11-06b';
 
 var DB_NAMA = 'reporthk', DB_VERSI = 1;
 function dbBuka() {
@@ -72,7 +72,7 @@ function kirimAntrean(kabar) {
         function lanjut() {
           if (i >= antre.length) return ringkas;
           var l = antre[i++];
-          return api({ aksi: 'kirim', token: akun.token, lap: { kode: l.kode, waktu: l.waktu, bagian: l.bagian, terkunci: l.terkunci, before: l.before, after: l.after || null, perangkat: l.perangkat, app: APP_VERSI } })
+          return api({ aksi: 'kirim', token: akun.token, lap: { kode: l.kode, waktu: l.waktu, bagian: l.bagian, terkunci: l.terkunci, before: l.before, after: l.after || null, jamBefore: l.jamBefore || '', jamAfter: l.jamAfter || '', perangkat: l.perangkat, app: APP_VERSI } })
             .then(function (j) {
               if (j && j.ok) {
                 // terkirim: foto dibuang dari HP (hemat memori), data ringkas disimpan untuk riwayat hari ini

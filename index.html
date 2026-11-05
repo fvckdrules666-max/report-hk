@@ -67,6 +67,9 @@ input:focus{outline:0;border-color:var(--teal);box-shadow:0 0 0 4px rgba(11,132,
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
 .grid button{border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 4px;font:inherit;font-weight:800;font-size:15px;cursor:pointer;min-height:48px}
 .grid button.done{background:var(--ok-bg);border-color:#a7f3d0;color:var(--ok)}
+.draf{border-color:#fcd34d;background:#fffbeb}
+.draf .it{cursor:pointer}.draf .it .go{background:var(--grad);color:#fff;border:0;border-radius:12px;padding:10px 12px;font:inherit;font-weight:800;font-size:14px;cursor:pointer;white-space:nowrap}
+.draf .it .go:active{transform:scale(.97)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}.chips button{border:1px solid var(--line);background:#fff;border-radius:99px;padding:8px 13px;font:inherit;font-weight:700;cursor:pointer;min-height:40px}
 .chips button.on{background:var(--teal);border-color:var(--teal);color:#fff}
 .toast{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:40;max-width:496px;margin:0 auto;background:#fff;border-radius:22px;padding:18px;box-shadow:0 18px 50px rgba(14,34,53,.28);animation:naik .28s var(--ease) both}
@@ -106,6 +109,11 @@ input:focus{outline:0;border-color:var(--teal);box-shadow:0 0 0 4px rgba(11,132,
     <div id="hSesi" class="msg err hidden">Sesi login berakhir. Laporan tetap aman di HP. <b>Login ulang</b> agar bisa terkirim. <button class="btn sm" type="button" id="bLoginUlang" style="margin-top:8px">Login ulang</button></div>
     <button class="btn big" type="button" id="bBaru">＋ Laporan baru</button>
     <div style="height:14px"></div>
+    <div class="card draf hidden" id="hDrafCard">
+      <h2>🧹 Sedang dibersihkan</h2>
+      <p class="muted" style="margin:0 0 4px">Selesai membersihkan? Ketuk kamarnya (atau scan QR-nya lagi) lalu ambil foto AFTER.</p>
+      <div id="hDraf"></div>
+    </div>
     <div class="card">
       <h2>Status kirim hari ini</h2>
       <div class="sync"><div class="s-ok"><b id="nKirim">0</b><span>Terkirim</span></div><div class="s-wait"><b id="nTunggu">0</b><span>Menunggu sinyal</span></div><div class="s-bad"><b id="nGagal">0</b><span>Gagal</span></div></div>
@@ -139,6 +147,7 @@ input:focus{outline:0;border-color:var(--teal);box-shadow:0 0 0 4px rgba(11,132,
     </div>
     <div class="card">
       <h2>3. Foto</h2>
+      <p class="muted" id="fFotoInfo" style="margin:0 0 4px">Foto otomatis diberi cap jam, kamar &amp; nama Anda. Ambil BEFORE <b>sebelum</b> mulai membersihkan.</p>
       <label>Foto BEFORE (sebelum)</label>
       <label class="foto" id="pBefore"><input type="file" accept="image/*" capture="environment" id="iBefore"><span>📷 Ambil foto BEFORE</span></label>
       <div id="wAfter"><label>Foto AFTER (sesudah)</label>
