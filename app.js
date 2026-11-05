@@ -14,7 +14,7 @@ function namaKamar(k) { var i = infoKamar(k); return 'Mess ' + i.mess + ' · ' +
 
 /* ---------------- mulai ---------------- */
 function mulai() {
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () { });
+  pasangPembaruan();
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () { });   // minta browser tidak menghapus data offline
   Promise.all([metaAmbil('akun'), metaAmbil('master'), muatSelisihJam()]).then(function (r) {
     A.akun = r[0] || null; setMaster((r[1] && r[1].kamar) || []);
@@ -25,6 +25,25 @@ function mulai() {
   window.addEventListener('offline', netUi);
   setInterval(function () { if (navigator.onLine) kirim(true); }, 45000);
   document.addEventListener('visibilitychange', function () { if (!document.hidden && navigator.onLine) kirim(true); });
+}
+/** Pembaruan otomatis: cek versi baru tiap aplikasi dibuka / kembali ke layar. Versi baru terpasang →
+ *  halaman dimuat ulang sendiri, tapi TIDAK saat sedang mengisi laporan (ditunda sampai kembali ke Beranda). */
+var PERBARUI = { siap: false };
+function pasangPembaruan() {
+  if (!('serviceWorker' in navigator)) return;
+  var adaLama = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
+    var cek = function () { if (navigator.onLine) reg.update().catch(function () { }); };
+    cek();
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) cek(); });
+  }).catch(function () { });
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (!adaLama) return;                       // pemasangan pertama: tidak perlu muat ulang
+    PERBARUI.siap = true; muatUlangBilaAman();
+  });
+}
+function muatUlangBilaAman() {
+  if (PERBARUI.siap && !A.form && $('sForm').classList.contains('hidden') && $('sManual').classList.contains('hidden')) { PERBARUI.siap = false; location.reload(); }
 }
 function setMaster(k) { A.master = k; A.kamarMap = {}; k.forEach(function (x) { A.kamarMap[x.k] = x; }); }
 function segarkanDariServer() {
@@ -77,7 +96,7 @@ $('bKeluar').onclick = function () {
 };
 
 /* ---------------- beranda ---------------- */
-function keHome() { show('sHome'); renderHome(); netUi(); petunjukPasang(); }
+function keHome() { show('sHome'); renderHome(); netUi(); petunjukPasang(); $('hVersi').textContent = 'Versi aplikasi ' + APP_VERSI; setTimeout(muatUlangBilaAman, 1500); }
 function netUi() { var on = navigator.onLine; $('hNet').classList.toggle('off', !on); $('hNet').querySelector('span').textContent = on ? 'Online' : 'Offline'; $('bKirim').disabled = !on; }
 function petunjukPasang() {
   var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
