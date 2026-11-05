@@ -1,7 +1,7 @@
 /* Report HK — penyimpanan offline (IndexedDB) + pengiriman antrean ke server.
  * Dipakai bersama oleh halaman (app.js) dan service worker (sw.js, untuk kirim di latar belakang di Android). */
 var API_URL = 'https://script.google.com/macros/s/AKfycbz5OReGyoLNvlMosAgsqE1cYRxPcIsk2OIyRJmqj3KUuSw4UpCvSvin93HS8sF_dxQK/exec';
-var APP_VERSI = '2026-11-06c';
+var APP_VERSI = '2026-11-06d';
 
 var DB_NAMA = 'reporthk', DB_VERSI = 1;
 function dbBuka() {
@@ -39,8 +39,12 @@ function lapHapus(kode) { return dbJalan('lap', 'readwrite', function (st) { ret
  *  Setiap jawaban membawa jam server → selisih jam HP disimpan (dipakai saat membuat laporan offline). */
 function api(isi) {
   var t0 = Date.now();
-  return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(isi), redirect: 'follow', cache: 'no-store' })
-    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  // batas waktu: kiriman yang macet (sinyal hilang / iPhone dikunci saat mengirim) tidak menahan antrean selamanya.
+  // Bila habis waktu → dianggap putus → dicoba lagi otomatis (server menolak dobel lewat Kode Unik).
+  var ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  var batas = setTimeout(function () { if (ctl) ctl.abort(); }, isi.aksi === 'kirim' ? 90000 : 30000);
+  return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(isi), redirect: 'follow', cache: 'no-store', signal: ctl ? ctl.signal : undefined })
+    .then(function (r) { clearTimeout(batas); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }, function (e) { clearTimeout(batas); throw e; })
     .then(function (j) {
       if (j && j.now) { var t1 = Date.now(), sel = j.now - Math.round((t0 + t1) / 2); if (t1 - t0 < 20000) { JAM.selisih = sel; metaSimpan('selisihJam', sel).catch(function () { }); } }
       return j;

@@ -19,7 +19,7 @@ function mulai() {
   Promise.all([metaAmbil('akun'), metaAmbil('master'), muatSelisihJam()]).then(function (r) {
     A.akun = r[0] || null; setMaster((r[1] && r[1].kamar) || []);
     if (!A.akun) { show('sLogin'); return; }
-    keHome(); segarkanDariServer();
+    keHome(); segarkanDariServer(); bukaFormTerakhir();
   }).catch(function (e) { show('sLogin'); msg($('mLogin'), 'err', 'Penyimpanan HP tidak bisa dibuka: ' + e.message); });
   window.addEventListener('online', function () { netUi(); kirim(); });
   window.addEventListener('offline', netUi);
@@ -224,7 +224,7 @@ $('bTutupToast').onclick = function () { $('toast').classList.add('hidden'); };
 $('bBatal').onclick = function () {
   var f = A.form;
   if (!f || (!f.bagian && !f.before)) { keHome(); return; }
-  if (f.kode) { keHome(); return; }                     // sudah tersimpan sebagai "Sedang dibersihkan" — aman
+  if (f.kode) { metaHapus('formAktif').catch(function () { }); keHome(); return; }   // sudah tersimpan sebagai "Sedang dibersihkan" — aman
   if (confirm('Batalkan laporan ini?')) keHome();
 };
 function isiKamarUi(k) {
@@ -295,16 +295,16 @@ function tulisCap(ctx, w, h, baris) {
     ctx.fillText(t, pad, h - tinggi + pad + i * lh + Math.round((lh - fs) / 2));
   });
 }
-/** Foto diperkecil di HP: sisi terpanjang 1280 px, JPEG kualitas 0,72 (±100–200 KB) + cap foto. */
+/** Foto diperkecil di HP: sisi terpanjang 1080 px, JPEG kualitas 0,70 (±80–150 KB) + cap foto. */
 function kompres(file, cap) {
   return new Promise(function (res, rej) {
     var url = URL.createObjectURL(file), img = new Image();
     img.onload = function () {
-      var m = 1280, s = Math.min(1, m / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
+      var m = 1080, s = Math.min(1, m / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
       c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
       var ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, c.width, c.height);
       if (cap) tulisCap(ctx, c.width, c.height, cap);
-      URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', 0.72));
+      URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', 0.7));
     };
     img.onerror = function () { URL.revokeObjectURL(url); rej(new Error('Foto tidak bisa dibaca. Ambil ulang.')); };
     img.src = url;
@@ -333,9 +333,20 @@ function kompres(file, cap) {
 function simpanDraf() {
   var f = A.form; if (!f || !f.kode || !f.bagian) return Promise.resolve();
   return lapSimpan({ kode: f.kode, status: 'draf', dibuat: Date.now(), waktu: f.jamBefore || waktuWita(), bagian: f.bagian, terkunci: f.terkunci,
-    before: f.before, jamBefore: f.jamBefore, after: f.after, jamAfter: f.jamAfter }).catch(function () { });
+    before: f.before, jamBefore: f.jamBefore, after: f.after, jamAfter: f.jamAfter }).then(function () { return metaSimpan('formAktif', f.kode); }).catch(function () { });
 }
 function drafSaya() { return lapSemua().then(function (s) { return s.filter(function (l) { return l.status === 'draf'; }).sort(function (a, b) { return (a.jamBefore || a.waktu) < (b.jamBefore || b.waktu) ? -1 : 1; }); }); }
+/** Kebiasaan HK (seperti AppSheet): foto BEFORE → HP ditinggal → foto AFTER di form yang sama.
+ *  Bila iPhone/Android menutup aplikasi di tengah jalan, saat dibuka lagi form itu langsung muncul kembali. */
+function bukaFormTerakhir() {
+  metaAmbil('formAktif').then(function (kode) {
+    if (!kode) return;
+    return drafSaya().then(function (ds) {
+      var d = ds.filter(function (x) { return x.kode === kode; })[0];
+      if (d && !A.form) bukaDraf(d); else if (!d) return metaHapus('formAktif');
+    });
+  }).catch(function () { });
+}
 function bukaDraf(d) {
   A.form = { kode: d.kode, bagian: d.bagian, terkunci: d.terkunci == null ? null : d.terkunci, before: d.before || '', jamBefore: d.jamBefore || '', after: d.after || '', jamAfter: d.jamAfter || '' };
   isiKamarUi(d.bagian); $('fDobel').classList.add('hidden'); msg($('mForm'), '', '');
@@ -354,7 +365,7 @@ $('bSimpan').onclick = function () {
   if (err) { msg($('mForm'), 'err', err); return; }
   var nama = namaKamar(f.bagian);
   if (!f.terkunci && !f.after) {   // baru BEFORE: simpan sebagai "Sedang dibersihkan"
-    simpanDraf().then(function () {
+    simpanDraf().then(function () { return metaHapus('formAktif'); }).catch(function () { }).then(function () {
       A.form = null; keHome();
       sukses('🧹 Silakan mulai membersihkan', nama + ' · setelah selesai, scan QR kamar ini lagi (atau ketuk di Beranda) untuk foto AFTER.');
     });
@@ -365,10 +376,10 @@ $('bSimpan').onclick = function () {
     status: 'antri', perangkat: (/iphone|ipad/i.test(navigator.userAgent) ? 'iOS' : /android/i.test(navigator.userAgent) ? 'Android' : 'Lain') + ' ' + (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone ? 'app' : 'browser') };
   var b = $('bSimpan'); b.disabled = true;
   lapSimpan(l).then(function () {
-    A.form = null; keHome(); daftarSyncLatar();
+    A.form = null; metaHapus('formAktif').catch(function () { }); keHome(); daftarSyncLatar();
     $('mSync').textContent = navigator.onLine ? 'Mengirim…' : 'Tersimpan di HP. Akan terkirim otomatis saat ada sinyal.';
     var menit = selisihMenit(l.jamBefore, l.jamAfter);
-    sukses('✅ Tersimpan', nama + (menit != null && !l.terkunci ? ' · ' + menit + ' menit' : '') + (navigator.onLine ? ' · sedang dikirim' : ' · terkirim otomatis saat ada sinyal'));
+    sukses('✅ Tersimpan', nama + (menit != null && menit >= 0 && !l.terkunci ? ' · ' + menit + ' menit' : '') + (navigator.onLine ? ' · sedang dikirim' : ' · terkirim otomatis saat ada sinyal'));
     if (navigator.onLine) kirim(true);
   }).catch(function (e) { msg($('mForm'), 'err', 'Gagal menyimpan di HP: ' + e.message + '. Memori HP mungkin penuh.'); })
     .then(function () { b.disabled = false; });
