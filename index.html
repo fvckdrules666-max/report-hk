@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b84a5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Report HK">
+<title>Report Housekeeper</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--teal:#0b84a5;--teal2:#2bb3a3;--teal-soft:#e3f4fa;--ink:#0e2235;--muted:#5f7387;--line:#dbe5ee;--bg:#f3f8fc;
+  --ok:#047857;--ok-bg:#d1fae5;--bad:#b91c1c;--bad-bg:#fee2e2;--warn:#92400e;--warn-bg:#fef3c7;--grad:linear-gradient(135deg,#0b84a5 0%,#2bb3a3 100%);--ease:cubic-bezier(.22,.8,.25,1)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;overflow-x:hidden}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;min-height:100vh}
+.wrap{max-width:520px;margin:0 auto;padding:calc(12px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom))}
+.hidden{display:none!important}
+h1{font-size:20px;margin:0}h2{font-size:17px;margin:0 0 10px}
+.muted{color:var(--muted);font-size:14px}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border:0;border-radius:14px;padding:12px 16px;font:inherit;font-weight:700;font-size:17px;background:var(--grad);color:#fff;cursor:pointer;transition:transform .14s var(--ease),filter .2s}
+.btn:active{transform:scale(.97)}.btn:disabled{opacity:.45}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.sm{width:auto;min-height:42px;font-size:15px;padding:8px 14px}
+.btn.big{min-height:64px;font-size:19px;border-radius:18px;box-shadow:0 10px 24px rgba(11,132,165,.28)}
+label{display:block;font-weight:700;font-size:14px;margin:12px 0 6px}
+input[type=text],input[type=password]{width:100%;font:inherit;font-size:17px;padding:13px 14px;border:1px solid #c9d6e2;border-radius:12px;background:#fff;color:var(--ink)}
+input:focus{outline:0;border-color:var(--teal);box-shadow:0 0 0 4px rgba(11,132,165,.14)}
+.msg{padding:11px 13px;border-radius:12px;margin:10px 0;font-size:15px}
+.msg.err{background:var(--bad-bg);color:var(--bad)}.msg.ok{background:var(--ok-bg);color:var(--ok)}.msg.warn{background:var(--warn-bg);color:var(--warn)}
+/* kepala */
+.hero{background:var(--grad);color:#fff;border-radius:22px;padding:16px 18px;margin-bottom:14px;box-shadow:0 10px 26px rgba(11,132,165,.25)}
+.hero small{opacity:.9;font-size:13px}.hero b{display:block;font-size:20px;line-height:1.25}
+.hero .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:4px 11px;font-size:13px;font-weight:700;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35)}
+.pill i{width:8px;height:8px;border-radius:50%;background:#86efac}.pill.off i{background:#fca5a5}
+.link{background:none;border:0;color:#fff;font:inherit;font-size:13px;font-weight:700;text-decoration:underline;cursor:pointer;padding:6px 0}
+/* status kirim */
+.sync{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.sync div{border-radius:14px;padding:10px;text-align:center}.sync b{display:block;font-size:24px;line-height:1.1}.sync span{font-size:12.5px;font-weight:700}
+.s-ok{background:var(--ok-bg);color:var(--ok)}.s-wait{background:var(--warn-bg);color:var(--warn)}.s-bad{background:var(--bad-bg);color:var(--bad)}
+/* progres lantai */
+.lt{margin:10px 0}.lt .h{display:flex;justify-content:space-between;font-size:14px;font-weight:700}
+.bar{height:10px;border-radius:99px;background:#e8eef4;overflow:hidden;margin-top:5px}.bar i{display:block;height:100%;background:var(--grad);border-radius:99px}
+.target{border-radius:14px;padding:12px 14px;font-weight:800;margin-bottom:6px}
+/* riwayat */
+.it{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line)}.it:last-child{border-bottom:0}
+.it .k{flex:1;min-width:0}.it .k b{display:block}.tag{border-radius:99px;padding:3px 10px;font-size:12.5px;font-weight:800;white-space:nowrap}
+/* form */
+.kamar{display:flex;align-items:center;justify-content:space-between;gap:10px;border:2px dashed var(--line);border-radius:16px;padding:14px;min-height:72px}
+.kamar b{font-size:22px}.dua{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pilih{border:2px solid var(--line);background:#fff;border-radius:16px;padding:16px 10px;font:inherit;font-weight:800;font-size:16px;color:var(--ink);cursor:pointer;min-height:64px}
+.pilih.on{border-color:var(--teal);background:var(--teal-soft);color:#0b6f8c}.pilih.on.kunci{border-color:#d97706;background:var(--warn-bg);color:var(--warn)}
+.foto{position:relative;border:2px dashed var(--line);border-radius:16px;min-height:150px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;color:var(--muted);font-weight:700;cursor:pointer;overflow:hidden;background:#fff}
+.foto img{width:100%;max-height:260px;object-fit:cover;display:block}.foto input{display:none}
+.foto .ganti{position:absolute;right:8px;bottom:8px;background:rgba(14,34,53,.7);color:#fff;border-radius:99px;padding:5px 11px;font-size:13px}
+/* scan */
+.scan{position:fixed;inset:0;background:#000;z-index:50;display:flex;flex-direction:column}
+.scan video{flex:1;width:100%;object-fit:cover}
+.scan .kotak{position:absolute;left:50%;top:42%;width:240px;height:240px;transform:translate(-50%,-50%);border:3px solid #2dd4bf;border-radius:22px;box-shadow:0 0 0 2000px rgba(0,0,0,.45)}
+.scan .bawah{position:absolute;left:0;right:0;bottom:0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));color:#fff;text-align:center}
+/* daftar kamar manual */
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.grid button{border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 4px;font:inherit;font-weight:800;font-size:15px;cursor:pointer;min-height:48px}
+.grid button.done{background:var(--ok-bg);border-color:#a7f3d0;color:var(--ok)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chips button{border:1px solid var(--line);background:#fff;border-radius:99px;padding:8px 13px;font:inherit;font-weight:700;cursor:pointer;min-height:40px}
+.chips button.on{background:var(--teal);border-color:var(--teal);color:#fff}
+.toast{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:40;max-width:496px;margin:0 auto;background:#fff;border-radius:22px;padding:18px;box-shadow:0 18px 50px rgba(14,34,53,.28);animation:naik .28s var(--ease) both}
+.toast b{display:block;font-size:22px;color:var(--ok)}.toast p{margin:4px 0 14px;color:var(--muted)}
+.toast .btn{font-size:15px;min-height:54px}
+@keyframes naik{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.spin{width:22px;height:22px;border:3px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp 1s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- LOGIN -->
+  <section id="sLogin" class="hidden">
+    <div class="hero"><small>Mess 17 · BRCB</small><b>Report Housekeeper</b><small>Bisa dipakai tanpa sinyal setelah login</small></div>
+    <div class="card">
+      <h2>Masuk</h2>
+      <p class="muted">Pakai NRP & password <b>Portal Karyawan</b>. Login perlu sinyal sekali; setelah itu aplikasi tetap jalan offline.</p>
+      <form id="fLogin">
+        <label for="lNrp">NRP</label><input type="text" id="lNrp" autocomplete="username" autocapitalize="characters" required>
+        <label for="lPw">Password</label><input type="password" id="lPw" autocomplete="current-password" required>
+        <div id="mLogin"></div>
+        <button class="btn" id="bLogin" type="submit" style="margin-top:14px">Masuk</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- BERANDA -->
+  <section id="sHome" class="hidden">
+    <div class="hero">
+      <div class="row"><div style="min-width:0"><small id="hSalam">Halo,</small><b id="hNama"></b></div><span class="pill" id="hNet"><i></i><span>Online</span></span></div>
+      <div class="row" style="margin-top:6px"><small id="hTgl"></small><button class="link" type="button" id="bKeluar">Keluar</button></div>
+    </div>
+    <div id="hInstal" class="msg warn hidden"></div>
+    <div id="hSesi" class="msg err hidden">Sesi login berakhir. Laporan tetap aman di HP. <b>Login ulang</b> agar bisa terkirim. <button class="btn sm" type="button" id="bLoginUlang" style="margin-top:8px">Login ulang</button></div>
+    <button class="btn big" type="button" id="bBaru">＋ Laporan baru</button>
+    <div style="height:14px"></div>
+    <div class="card">
+      <h2>Status kirim hari ini</h2>
+      <div class="sync"><div class="s-ok"><b id="nKirim">0</b><span>Terkirim</span></div><div class="s-wait"><b id="nTunggu">0</b><span>Menunggu sinyal</span></div><div class="s-bad"><b id="nGagal">0</b><span>Gagal</span></div></div>
+      <div id="mSync" class="muted"></div>
+      <button class="btn ghost sm" type="button" id="bKirim" style="margin-top:10px">Kirim sekarang</button>
+    </div>
+    <div class="card">
+      <h2>Progres target hari ini</h2>
+      <div id="hTarget"></div>
+      <div id="hLantai"></div>
+    </div>
+    <div class="card">
+      <h2>Laporan saya hari ini</h2>
+      <div id="hList"></div>
+    </div>
+  </section>
+
+  <!-- FORM LAPORAN -->
+  <section id="sForm" class="hidden">
+    <div class="hero"><div class="row"><b>Laporan baru</b><button class="link" type="button" id="bBatal">Batal</button></div></div>
+    <div class="card">
+      <h2>1. Kamar</h2>
+      <div class="kamar"><div><b id="fKamar">Belum dipilih</b><div class="muted" id="fKamarInfo">Scan QR di pintu kamar</div></div></div>
+      <div id="fDobel" class="msg warn hidden"></div>
+      <div class="dua" style="margin-top:10px"><button class="btn" type="button" id="bScan">📷 Scan QR</button><button class="btn ghost" type="button" id="bManual">Pilih manual</button></div>
+    </div>
+    <div class="card">
+      <h2>2. Kondisi kamar</h2>
+      <div class="dua"><button class="pilih" type="button" data-kunci="0">🧹 Dibersihkan</button><button class="pilih kunci" type="button" data-kunci="1">🔒 Terkunci</button></div>
+      <p class="muted" id="fKunciInfo" style="margin:8px 0 0">Kamar terkunci cukup foto BEFORE saja.</p>
+    </div>
+    <div class="card">
+      <h2>3. Foto</h2>
+      <label>Foto BEFORE (sebelum)</label>
+      <label class="foto" id="pBefore"><input type="file" accept="image/*" capture="environment" id="iBefore"><span>📷 Ambil foto BEFORE</span></label>
+      <div id="wAfter"><label>Foto AFTER (sesudah)</label>
+      <label class="foto" id="pAfter"><input type="file" accept="image/*" capture="environment" id="iAfter"><span>📷 Ambil foto AFTER</span></label></div>
+    </div>
+    <div id="mForm"></div>
+    <button class="btn big" type="button" id="bSimpan">Simpan laporan</button>
+  </section>
+
+  <!-- PILIH KAMAR MANUAL -->
+  <section id="sManual" class="hidden">
+    <div class="hero"><div class="row"><b>Pilih kamar</b><button class="link" type="button" id="bManualTutup">Kembali</button></div></div>
+    <div class="card"><label style="margin-top:0">Mess</label><div class="chips" id="mMess"></div><div class="grid" id="mKamar"></div></div>
+  </section>
+</div>
+
+<!-- KAMERA SCAN QR -->
+<div class="scan hidden" id="sScan">
+  <video id="vid" playsinline muted></video><div class="kotak"></div>
+  <div class="bawah"><div id="scanInfo" style="margin-bottom:12px;font-weight:700">Arahkan kamera ke QR di pintu kamar</div><button class="btn ghost" type="button" id="bScanTutup">Batal</button></div>
+</div>
+<canvas id="cv" class="hidden"></canvas>
+
+<!-- PESAN SETELAH SIMPAN -->
+<div class="toast hidden" id="toast"><b></b><p></p>
+  <div class="dua"><button class="btn" type="button" id="bLagi">＋ Lapor kamar berikutnya</button><button class="btn ghost" type="button" id="bTutupToast">Selesai</button></div></div>
+
+<script src="kirim.js"></script>
+<script src="jsQR.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
