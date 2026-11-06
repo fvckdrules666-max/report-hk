@@ -2,7 +2,7 @@
  * dan (Android) mengirim antrean laporan di latar belakang begitu sinyal kembali.
  * PENTING: setiap rilis WAJIB menaikkan SW_VERSI (= APP_VERSI di kirim.js). Browser (terutama Safari iPhone)
  * hanya memasang versi baru bila isi file sw.js ini berubah. */
-var SW_VERSI = '2026-11-06d';
+var SW_VERSI = '2026-11-06e';
 importScripts('kirim.js?v=' + SW_VERSI);
 var CACHE = 'reporthk-' + SW_VERSI;
 var BERKAS = ['./', './index.html', './app.js', './kirim.js', './jsQR.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon.svg'];

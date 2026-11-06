@@ -201,7 +201,7 @@ function daftarSyncLatar() {   // Android: browser mengirim sendiri saat sinyal 
 // A.form = {kode, bagian, terkunci, before, jamBefore, after, jamAfter}
 // Setelah foto BEFORE diambil, laporan langsung disimpan di HP sebagai "draf" (Sedang dibersihkan) supaya
 // aman walau HP dikunci / aplikasi tertutup selama membersihkan. Foto AFTER melengkapi draf → masuk antrean kirim.
-function formKosong() { return { kode: '', bagian: '', terkunci: null, before: '', jamBefore: '', after: '', jamAfter: '' }; }
+function formKosong() { return { kode: '', bagian: '', terkunci: null, before: '', beforeAsli: '', jamBefore: '', after: '', jamAfter: '' }; }
 function laporanBaru() {
   if (!A.master.length) { alert('Daftar kamar belum tersimpan di HP. Buka aplikasi sekali saat ada sinyal.'); return; }
   A.form = formKosong();
@@ -265,7 +265,18 @@ function setKunci(v) {
   $('wAfter').classList.toggle('hidden', v === true);
   tombolSimpan();
 }
-document.querySelectorAll('[data-kunci]').forEach(function (b) { b.onclick = function () { setKunci(b.dataset.kunci === '1'); if (A.form && A.form.kode) simpanDraf(); }; });
+document.querySelectorAll('[data-kunci]').forEach(function (b) {
+  b.onclick = function () {
+    var F = A.form, lama = F ? F.terkunci : null;
+    setKunci(b.dataset.kunci === '1');
+    if (!F) return;
+    if (F.before && F.beforeAsli && F.jamBefore && lama !== F.terkunci) {
+      capUlang(F.beforeAsli, capBaris('before', F.jamBefore, F)).then(function (d) {
+        F.before = d; tampilFoto('pBefore', d); if (F.kode) simpanDraf();
+      }).catch(function () { });
+    } else if (F.kode) simpanDraf();
+  };
+});
 /** Tulisan tombol mengikuti langkah: belum ada AFTER → "Mulai membersihkan". */
 function tombolSimpan() {
   var f = A.form, b = $('bSimpan'); if (!f) return;
@@ -296,32 +307,54 @@ function tulisCap(ctx, w, h, baris) {
   });
 }
 /** Foto diperkecil di HP: sisi terpanjang 1080 px, JPEG kualitas 0,70 (±80–150 KB) + cap foto. */
-function kompres(file, cap) {
+function kompres(file, cap, simpanAsli) {
   return new Promise(function (res, rej) {
     var url = URL.createObjectURL(file), img = new Image();
     img.onload = function () {
       var m = 1080, s = Math.min(1, m / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
       c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
       var ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, c.width, c.height);
+      var asli = simpanAsli ? c.toDataURL('image/jpeg', 0.85) : '';
       if (cap) tulisCap(ctx, c.width, c.height, cap);
-      URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', 0.7));
+      URL.revokeObjectURL(url); res({ foto: c.toDataURL('image/jpeg', 0.7), asli: asli });
     };
     img.onerror = function () { URL.revokeObjectURL(url); rej(new Error('Foto tidak bisa dibaca. Ambil ulang.')); };
     img.src = url;
   });
+}
+/** Gambar ulang cap pada foto asli (dipakai bila kondisi kamar diganti setelah foto BEFORE diambil). */
+function capUlang(asli, cap) {
+  return new Promise(function (res, rej) {
+    var img = new Image();
+    img.onload = function () {
+      var c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+      var ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0); tulisCap(ctx, c.width, c.height, cap);
+      res(c.toDataURL('image/jpeg', 0.7));
+    };
+    img.onerror = function () { rej(new Error('Foto tidak bisa dibaca.')); };
+    img.src = asli;
+  });
+}
+/** Baris cap foto. BEFORE memuat kondisi kamar (TERKUNCI / DIBERSIHKAN). */
+function capBaris(jenis, jam, F) {
+  var i = infoKamar(F.bagian), menit = jenis === 'after' ? selisihMenit(F.jamBefore, jam) : null;
+  var kondisi = jenis === 'before' ? (F.terkunci === true ? ' · 🔒 TERKUNCI' : F.terkunci === false ? ' · DIBERSIHKAN' : '') : '';
+  return [(jenis === 'before' ? 'BEFORE' : 'AFTER') + kondisi + ' · ' + jamTeks(jam) + ' WITA' + (menit != null && menit >= 0 ? ' · ' + menit + ' menit' : ''),
+    'Mess ' + i.mess + ' · Kamar ' + i.no + ' (' + F.bagian + ')',
+    (A.akun.nama || A.akun.label) + ' · ' + A.akun.nrp];
 }
 [['iBefore', 'pBefore', 'before'], ['iAfter', 'pAfter', 'after']].forEach(function (x) {
   $(x[0]).onchange = function () {
     var f = this.files && this.files[0], inp = this; if (!f) return;
     var F = A.form;
     if (!F.bagian) { inp.value = ''; msg($('mForm'), 'err', 'Pilih kamar dulu (scan QR atau pilih manual), baru ambil foto.'); return; }
-    var jam = waktuWita(), i = infoKamar(F.bagian), menit = x[2] === 'after' ? selisihMenit(F.jamBefore, jam) : null;
-    var cap = [(x[2] === 'before' ? 'BEFORE' : 'AFTER') + ' · ' + jamTeks(jam) + ' WITA' + (menit != null && menit >= 0 ? ' · ' + menit + ' menit' : ''),
-      'Mess ' + i.mess + ' · Kamar ' + i.no + ' (' + F.bagian + ')',
-      (A.akun.nama || A.akun.label) + ' · ' + A.akun.nrp];
+    if (F.terkunci === null) { inp.value = ''; msg($('mForm'), 'err', 'Pilih kondisi kamar dulu: Dibersihkan atau Terkunci.'); return; }
+    var jam = waktuWita(), cap = capBaris(x[2], jam, F);
     var p = $(x[1]); p.querySelector('span').textContent = 'Memproses foto…';
-    kompres(f, cap).then(function (d) {
+    kompres(f, cap, x[2] === 'before').then(function (r) {
+      var d = r.foto;
       F[x[2]] = d; F[x[2] === 'before' ? 'jamBefore' : 'jamAfter'] = jam;
+      if (x[2] === 'before') F.beforeAsli = r.asli;
       if (x[2] === 'before' && F.after) { F.after = ''; F.jamAfter = ''; resetFoto('pAfter'); }   // BEFORE diulang → AFTER diulang juga (durasi)
       tampilFoto(x[1], d); msg($('mForm'), '', '');
       if (!F.kode) F.kode = kodeBaru();
@@ -333,7 +366,7 @@ function kompres(file, cap) {
 function simpanDraf() {
   var f = A.form; if (!f || !f.kode || !f.bagian) return Promise.resolve();
   return lapSimpan({ kode: f.kode, status: 'draf', dibuat: Date.now(), waktu: f.jamBefore || waktuWita(), bagian: f.bagian, terkunci: f.terkunci,
-    before: f.before, jamBefore: f.jamBefore, after: f.after, jamAfter: f.jamAfter }).then(function () { return metaSimpan('formAktif', f.kode); }).catch(function () { });
+    before: f.before, beforeAsli: f.beforeAsli || '', jamBefore: f.jamBefore, after: f.after, jamAfter: f.jamAfter }).then(function () { return metaSimpan('formAktif', f.kode); }).catch(function () { });
 }
 function drafSaya() { return lapSemua().then(function (s) { return s.filter(function (l) { return l.status === 'draf'; }).sort(function (a, b) { return (a.jamBefore || a.waktu) < (b.jamBefore || b.waktu) ? -1 : 1; }); }); }
 /** Kebiasaan HK (seperti AppSheet): foto BEFORE → HP ditinggal → foto AFTER di form yang sama.
@@ -348,7 +381,7 @@ function bukaFormTerakhir() {
   }).catch(function () { });
 }
 function bukaDraf(d) {
-  A.form = { kode: d.kode, bagian: d.bagian, terkunci: d.terkunci == null ? null : d.terkunci, before: d.before || '', jamBefore: d.jamBefore || '', after: d.after || '', jamAfter: d.jamAfter || '' };
+  A.form = { kode: d.kode, bagian: d.bagian, terkunci: d.terkunci == null ? null : d.terkunci, before: d.before || '', beforeAsli: d.beforeAsli || '', jamBefore: d.jamBefore || '', after: d.after || '', jamAfter: d.jamAfter || '' };
   isiKamarUi(d.bagian); $('fDobel').classList.add('hidden'); msg($('mForm'), '', '');
   resetFoto('pBefore'); resetFoto('pAfter');
   if (A.form.before) tampilFoto('pBefore', A.form.before);
