@@ -1,3 +1,19 @@
+/* Kotak pesan sendiri, pengganti alert()/confirm() bawaan browser (judulnya selalu menampilkan alamat situs).
+ * kotakPesan(teks) = pesan; kotakPesan(teks, onYa, labelYa, onBatal) = konfirmasi (tidak menunggu → lanjutan masuk onYa). */
+function kotakPesan(teks, onYa, labelYa, onBatal) {
+  var ov = document.createElement('div'); ov.className = 'kp-ov'; ov.setAttribute('role', 'alertdialog'); ov.setAttribute('aria-modal', 'true');
+  var box = document.createElement('div'); box.className = 'kp-box';
+  var isi = document.createElement('div'); isi.className = 'kp-isi'; isi.textContent = String(teks);
+  var aksi = document.createElement('div'); aksi.className = 'kp-aksi';
+  if (onYa) {
+    var batal = document.createElement('button'); batal.type = 'button'; batal.className = 'btn ghost kp-batal'; batal.textContent = 'Batal';
+    batal.onclick = function () { ov.remove(); if (onBatal) onBatal(); }; aksi.appendChild(batal);
+  }
+  var ya = document.createElement('button'); ya.type = 'button'; ya.className = 'btn kp-ya'; ya.textContent = labelYa || 'Oke';
+  ya.onclick = function () { ov.remove(); if (onYa) onYa(); }; aksi.appendChild(ya);
+  box.appendChild(isi); box.appendChild(aksi); ov.appendChild(box); document.body.appendChild(ov); ya.focus();
+}
+window.alert = function (t) { kotakPesan(t); };
 /* Report HK — logika tampilan. Data & antrean: kirim.js (IndexedDB). */
 var A = { akun: null, master: [], kamarMap: {}, serverHariIni: [], form: null };
 function $(id) { return document.getElementById(id); }
@@ -90,8 +106,7 @@ $('bKeluar').onclick = function () {
   lapSemua().then(function (s) {
     var n = s.filter(function (l) { return l.status === 'antri' || l.status === 'draf'; }).length;
     if (n) { alert('Masih ada ' + n + ' laporan yang belum terkirim / belum selesai (foto AFTER). Selesaikan dulu sebelum keluar.'); return; }
-    if (!confirm('Keluar dari aplikasi?')) return;
-    metaHapus('akun').then(function () { A.akun = null; show('sLogin'); });
+    kotakPesan('Keluar dari aplikasi?', function () { metaHapus('akun').then(function () { A.akun = null; show('sLogin'); }); }, 'Ya, keluar');
   });
 };
 
@@ -154,7 +169,7 @@ function renderDraf() {
 }
 $('hDraf').addEventListener('click', function (e) {
   var h = e.target.closest('[data-hapusdraf]');
-  if (h) { if (confirm('Hapus laporan kamar ini dari HP? Foto BEFORE ikut terhapus.')) lapHapus(h.dataset.hapusdraf).then(renderHome); return; }
+  if (h) { kotakPesan('Hapus laporan kamar ini dari HP? Foto BEFORE ikut terhapus.', function () { lapHapus(h.dataset.hapusdraf).then(renderHome); }, 'Ya, hapus'); return; }
   var it = e.target.closest('[data-draf]'); if (!it) return;
   drafSaya().then(function (ds) { var d = ds.filter(function (x) { return x.kode === it.dataset.draf; })[0]; if (d) bukaDraf(d); });
 });
@@ -178,7 +193,7 @@ function renderTarget(kini) {
 }
 $('hList').addEventListener('click', function (e) {
   var b = e.target.closest('[data-hapus]'); if (!b) return;
-  if (confirm('Hapus laporan yang gagal ini dari HP? (tidak terkirim ke server)')) lapHapus(b.dataset.hapus).then(renderHome);
+  kotakPesan('Hapus laporan yang gagal ini dari HP? (tidak terkirim ke server)', function () { lapHapus(b.dataset.hapus).then(renderHome); }, 'Ya, hapus');
 });
 
 /* ---------------- kirim ---------------- */
@@ -225,7 +240,7 @@ $('bBatal').onclick = function () {
   var f = A.form;
   if (!f || (!f.bagian && !f.before)) { keHome(); return; }
   if (f.kode) { metaHapus('formAktif').catch(function () { }); keHome(); return; }   // sudah tersimpan sebagai "Sedang dibersihkan" — aman
-  if (confirm('Batalkan laporan ini?')) keHome();
+  kotakPesan('Batalkan laporan ini?', function () { keHome(); }, 'Ya, batalkan');
 };
 function isiKamarUi(k) {
   var i = infoKamar(k);
@@ -234,10 +249,17 @@ function isiKamarUi(k) {
 function pilihKamar(k) {
   var f = A.form;
   if (f.bagian && f.bagian !== k && (f.before || f.after)) {
-    if (!confirm('Ganti kamar ke ' + namaKamar(k) + '? Foto yang sudah diambil akan dihapus.')) { show('sForm'); return; }
-    if (f.kode) lapHapus(f.kode).catch(function () { });
-    A.form = f = formKosong(); resetFoto('pBefore'); resetFoto('pAfter'); setKunci(null);
+    kotakPesan('Ganti kamar ke ' + namaKamar(k) + '? Foto yang sudah diambil akan dihapus.', function () {
+      if (f.kode) lapHapus(f.kode).catch(function () { });
+      A.form = formKosong(); resetFoto('pBefore'); resetFoto('pAfter'); setKunci(null);
+      pilihKamarLanjut(k);
+    }, 'Ya, ganti', function () { show('sForm'); });
+    return;
   }
+  return pilihKamarLanjut(k);
+}
+function pilihKamarLanjut(k) {
+  var f = A.form;
   if (!f.before) {   // kamar ini sedang dibersihkan (ada draf)? → lanjutkan draf itu (tinggal foto AFTER)
     return drafSaya().then(function (ds) {
       var d = ds.filter(function (x) { return x.bagian === k; })[0];

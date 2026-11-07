@@ -79,6 +79,12 @@ input:focus{outline:0;border-color:var(--teal);box-shadow:0 0 0 4px rgba(11,132,
 .spin{width:22px;height:22px;border:3px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp 1s linear infinite;display:inline-block}
 @keyframes sp{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* kotak pesan (kotakPesan), pengganti dialog bawaan browser */
+.kp-ov{position:fixed;inset:0;z-index:3000;background:rgba(14,34,53,.5);display:flex;align-items:center;justify-content:center;padding:16px}
+.kp-box{background:#fff;border-radius:18px;padding:20px;width:100%;max-width:400px;box-shadow:0 24px 60px rgba(14,34,53,.25)}
+.kp-isi{font-size:16px;line-height:1.45;white-space:pre-line;overflow-wrap:anywhere;color:var(--ink)}
+.kp-aksi{display:flex;gap:10px;margin-top:18px}
+.kp-aksi .btn{flex:1;width:auto}
 </style>
 </head>
 <body>

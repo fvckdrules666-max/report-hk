@@ -1,7 +1,7 @@
 /* Report HK — penyimpanan offline (IndexedDB) + pengiriman antrean ke server.
  * Dipakai bersama oleh halaman (app.js) dan service worker (sw.js, untuk kirim di latar belakang di Android). */
 var API_URL = 'https://script.google.com/macros/s/AKfycbz5OReGyoLNvlMosAgsqE1cYRxPcIsk2OIyRJmqj3KUuSw4UpCvSvin93HS8sF_dxQK/exec';
-var APP_VERSI = '2026-11-06e';
+var APP_VERSI = '2026-11-07a';
 
 var DB_NAMA = 'reporthk', DB_VERSI = 1;
 function dbBuka() {
